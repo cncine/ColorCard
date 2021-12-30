@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+		<title>立邦纯色色卡</title>
+		<script src="./jquery-3.6.0.min.js"></script>
+		<style>
+			html,
+			body {
+				margin: 0;
+				padding: 0;
+			}
+
+			.maindiv {
+				font-size: 0;
+				width: 100vw;
+				height: 75vh;
+				background-color: #ffffff;
+				overflow-y: auto;
+			}
+
+			.itemdiv {
+				width: calc(50% - 75vh * 0.03);
+				height: 12%;
+				background-color: aqua;
+				font-size: calc(75vh * 0.06);
+				padding-left: calc(75vh * 0.03);
+				display: flex;
+				align-items: center;
+				float: left;
+			}
+			.itemdiv.sel::after {
+				content: "√";
+			}
+
+			.typediv {
+				width: calc(100% - 75vh * 0.03);
+				height: 12%;
+				font-size: calc(75vh * 0.06);
+				padding-left: calc(75vh * 0.03);
+				display: flex;
+				align-items: center;
+				float: left;
+			}
+			.describe {
+				width: calc(100vw - 25vh);
+				padding-left: 1rem;
+				padding-right: 1rem;
+				float: left;
+				/* word-break:break-all; */
+			}
+			.colorBolck {
+				width: 20vh;
+				height: 20vh;
+				position: absolute;
+				right: 2.5vh;
+				top: 77.5vh;
+				box-shadow:0 0 1vh;
+			}
+			.loadingdiv {
+				position: absolute;
+				left: 50%;
+				top: 50%;
+				transform: translate(-50%, -50%);
+				font-size: calc(75vh * 0.06);
+				padding: calc(75vh * 0.06);
+				color: #FFFFFF;
+				background-color: MidnightBlue;
+				border:1px solid black;
+				border-radius: calc(75vh * 0.02);
+			}
+		</style>
+	</head>
+	<body>
+		<div class="maindiv"></div>
+		<div class="loadingdiv">加载中</div>
+		<p class="describe">选择颜色</p>
+		<div class="colorBolck"></div>
+		<script>
+			var selcolor = null;
+			//var colorNum = 0;
+			/*RGB颜色转换为16进制*/
+			String.prototype.colorHex = function(){
+				var that = this;
+				//十六进制颜色值的正则表达式
+				var reg = /^#([0-9a-fA-f]{3}|[0-9a-fA-f]{6})$/;
+				// 如果是rgb颜色表示
+				if (/^(rgb|RGB)/.test(that)) {
+					var aColor = that.replace(/(?:\(|\)|rgb|RGB)*/g, "").split(",");
+					var strHex = "#";
+					for (var i=0; i<aColor.length; i++) {
+						var hex = Number(aColor[i]).toString(16);
+						if (hex === "0") {
+							hex += hex;	
+						}
+						strHex += hex;
+					}
+					if (strHex.length !== 7) {
+						strHex = that;	
+					}
+					return strHex;
+				} else if (reg.test(that)) {
+					var aNum = that.replace(/#/,"").split("");
+					if (aNum.length === 6) {
+						return that;	
+					} else if(aNum.length === 3) {
+						var numHex = "#";
+						for (var i=0; i<aNum.length; i+=1) {
+							numHex += (aNum[i] + aNum[i]);
+						}
+						return numHex;
+					}
+				}
+				return that;
+			};
+			/*RGB反转*/
+			function reverseColor(rgbColor) { //205,15,20 
+				// console.log(rgbColor); 
+				rgbColor = rgbColor.replace(/\s/g, "");
+				var arrRGB = new Array(3);
+				if (rgbColor.indexOf("rgb") > -1) {
+					var colorReg = /\s*\d+,\s*\d+,\s*\d+/i;
+					var t = colorReg.exec(rgbColor)[0].split(",");
+					//colorNum ++;
+					//console.log(t.toString() + "--" + colorNum.toString());
+					for (var i = 0; i < arrRGB.length; i++) {
+						arrRGB[i] = 255 - t[i];
+					}
+				} else if (rgbColor.indexOf("#") > -1) {
+					if (rgbColor.length > 4) //"#fc0,#ffcc00" 
+					{
+						var j = 1;
+						for (var i = 0; i < arrRGB.length; i++) {
+							arrRGB[i] = 255 - parseInt(rgbColor.substr((i + j), 2), 16);
+							j += 1;
+						}
+					} else {
+						for (var i = 0; i < arrRGB.length; i++) {
+							var t = rgbColor.substr((i + 1), 1);
+							t = t + t;
+							arrRGB[i] = 255 - parseInt(t, 16);
+						}
+					}
+				}
+				return "rgb(" + arrRGB.join(",") + ")";
+			}
+
+			function addItemDiv(tit, col) {
+				var tempelement = document.createElement("div");
+				tempelement.className = "itemdiv";
+				tempelement.innerHTML = tit.substr(tit.indexOf(" ") + 1, tit.length - tit.indexOf(" ") - 1);
+				tempelement.style.color = reverseColor(col);
+				tempelement.style.backgroundColor = col;
+				tempelement.setAttribute("colour", col);
+				tempelement.setAttribute("number", tit.substr(0, tit.indexOf(" ")));
+				document.querySelector(".maindiv").appendChild(tempelement);
+			}
+
+			function addTypeDiv(tit) {
+				var tempelement = document.createElement("div");
+				tempelement.className = "typediv";
+				tempelement.innerHTML = tit;
+				document.querySelector(".maindiv").appendChild(tempelement);
+			}
+			$.getJSON("colorsdata.json", "", function(data) {
+				for (var i = 0; i < data.MoreColors.length; i++) {
+					if (i != 3 && i != 5) {
+						addTypeDiv(data.MoreColors[i].title);
+						if (i == 0 || i == 2) {
+							for (var j = 0; j < data.MoreColors[i].xtitledata.length; j++) {
+								addTypeDiv("•&nbsp;" + data.MoreColors[i].xtitledata[j].xtitle);
+								for (var k = 0; k < data.MoreColors[i].xtitledata[j].data.length; k++) {
+									addItemDiv(data.MoreColors[i].xtitledata[j].data[k].name, data.MoreColors[i].xtitledata[j].data[k].rgb);
+								}
+							}
+						} else if (i == 1) {
+							for (var j = 0; j < data.MoreColors[i].data.length; j++) {
+								addItemDiv(data.MoreColors[i].data[j].name, data.MoreColors[i].data[j].rgb);
+							}
+						} else if (i == 4) {
+							for (var j = 0; j < data.MoreColors[i].colordata.length; j++) {
+								addItemDiv(data.MoreColors[i].colordata[j].name, data.MoreColors[i].colordata[j].rgb);
+							}
+						}
+					}
+				}
+				$(".loadingdiv").remove();
+			});
+			$(".maindiv").on('click', '.itemdiv', function() {
+				$(".colorBolck").css("backgroundColor", $(this).attr("colour"));
+				$(".describe").html("颜色编号：" + $(this).attr("number") + "<br/>颜色名称：" + $(this).text() + "<br/>颜色RGB：" + (($(this).attr("colour")).replace("rgb(", "")).replace(")", "") + "<br/>十六进制：" + ($(this).attr("colour")).colorHex());
+				$(this).toggleClass("sel");
+				if (selcolor && selcolor != $(this)) {
+					selcolor.toggleClass("sel");
+				}
+				selcolor = $(this);
+			});
+		</script>
+	</body>
+</html>
